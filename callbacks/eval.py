@@ -9,6 +9,7 @@ from matplotlib.pyplot import cm
 import spacy
 import  progressbar
 from google.colab.patches import cv2_imshow
+from matplotlib import pyplot as plt
 
 class Evaluate(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
@@ -68,7 +69,12 @@ class Evaluate(keras.callbacks.Callback):
             mask[pred_box[1]:pred_box[3]+1,pred_box[0]:pred_box[2]+1,...]=1.
         return pred_seg*mask
     def on_epoch_end(self, epoch, logs=None):
-        self.evaluate(is_save_images=True)
+        if logs is None:
+            logs = {}
+        image, seg_image, image_with_seg = self.evaluate(is_save_images=True)
+        logs['image'] = image
+        logs['seg_image'] = seg_image
+        logs['image_with_seg'] = image_with_seg
 
     def evaluate(self, tag='image', is_save_images=False):
         self.boxes, self.scores, self.eval_inputs = yolo_eval_v2(self.model.output_shape[0],self.anchors, self.input_image_shape,
@@ -147,7 +153,7 @@ class Evaluate(keras.callbacks.Callback):
                 image = np.array(images[i] * 255.).astype(np.uint8)
                 # segement image for saving
                 seg_image = np.array(
-                    cv2.resize(np.array(pred_segs[i] > self.seg_min_overlap).astype(np.float32),
+                    cv2.resize(np.array(pred_segs[i] <= self.seg_min_overlap).astype(np.float32),
                                 self.input_shape)).astype(
                     np.uint8) * 255
                 label = '{:%.2f}' % score
@@ -166,13 +172,22 @@ class Evaluate(keras.callbacks.Callback):
                             (20, 20),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             .9, self.colors[2], 2)
-                cv2.imwrite('./images/'+str(files_id[i])+'.jpg',image)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                seg_image = cv2.cvtColor(seg_image, cv2.COLOR_GRAY2RGB)
+                print(seg_image.shape)
+                H, W, C = seg_image.shape
+                for i in range(H):
+                    for j in range(W):
+                        if (np.sum(seg_image[i, j,:]) == 0):
+                            seg_image[i,j,1] = 255
+                image_with_seg = cv2.addWeighted(image, 0.4, seg_image, 0.1, 0)
+                cv2.imwrite('./images/'+'output'+'.jpg',image)
+                cv2.imwrite('./images/'+'segment'+'.jpg', seg_image)
+                cv2.imwrite('./images/'+'image_with_seg'+'.jpg', image_with_seg)
                 # TODO: show image (image) and segmentation (seg_image)
-                # image_with_seg = cv2.addWeighted(image, 0.9, seg_image, 0.1, 0)
                 # cv2_imshow(image_with_seg)
                 print("Output")
-                cv2_imshow(image)
-                cv2_imshow(seg_image)
+                return image, seg_image, image_with_seg
 
     def sigmoid_(self,x):
         return 1. / (1. + np.exp(-x))

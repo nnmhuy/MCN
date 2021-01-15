@@ -9,6 +9,7 @@ from callbacks.eval import Evaluate
 from callbacks.common import RedirectModel
 import shutil
 import sys
+from google.colab.patches import cv2_imshow
 
 class Evaluator(object):
     def __init__(self, image_path, query_sentence):
@@ -62,7 +63,11 @@ class Evaluator(object):
 
     def eval(self):
         results=dict()
-        self.evaluator.on_epoch_end(-1,results)
+        self.evaluator.on_epoch_end(-1, results)
+        image = results['image']
+        seg_image = results['seg_image']
+        image_with_seg = results['image_with_seg']
+        cv2_imshow(image)
 
     @staticmethod
     def get_anchors(anchors_path):
