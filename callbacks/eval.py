@@ -39,7 +39,6 @@ class Evaluate(keras.callbacks.Callback):
         self.query_sentence = query_sentence
         self.tensorboard     = tensorboard
         self.verbose         = verbose
-        self.vis_id=[i for i in np.random.randint(0, len(data), 200)]
         self.batch_size = max(config['batch_size']//2,1)
         self.colors = np.array(cm.hsv(np.linspace(0, 1, 10)).tolist()) * 255
         self.input_shape = (config['input_size'], config['input_size'])  # multiple of 32, hw
@@ -119,6 +118,9 @@ class Evaluate(keras.callbacks.Callback):
                     K.learning_phase(): 0
                 })
 
+            pred_box = self.box_value_fix(out_boxes[0], self.input_shape)
+            score = out_scores[0]
+
             # ih = gt_segs[i].shape[0]
             # iw = gt_segs[i].shape[1]
             # w, h = self.input_shape
@@ -166,8 +168,11 @@ class Evaluate(keras.callbacks.Callback):
                             .9, self.colors[2], 2)
                 cv2.imwrite('./images/'+str(files_id[i])+'.jpg',image)
                 # TODO: show image (image) and segmentation (seg_image)
-                image_with_seg = cv2.addWeighted(image, 0.9, seg_image, 0.1, 0)
-                cv2_imshow(image_with_seg)
+                # image_with_seg = cv2.addWeighted(image, 0.9, seg_image, 0.1, 0)
+                # cv2_imshow(image_with_seg)
+                print("Output")
+                cv2_imshow(image)
+                cv2_imshow(seg_image)
 
     def sigmoid_(self,x):
         return 1. / (1. + np.exp(-x))

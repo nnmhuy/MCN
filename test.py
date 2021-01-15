@@ -77,5 +77,5 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     image_path = args[0]
     query_sentence = args[1]
-    evaluator = Evaluator(sys.argv[1:], query_sentence)
+    evaluator = Evaluator(image_path, query_sentence)
     evaluator.eval()
