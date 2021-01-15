@@ -87,7 +87,8 @@ def qlist_to_vec(max_length, q_list,embed):
         else:
             glove_matrix.append(np.zeros(300,dtype=float))
     return np.array(glove_matrix)
-def get_random_data(annotation_line, input_shape,embed,config, train_mode=True, max_boxes=1):
+
+def get_random_data(annotation_line, input_shape, embed,config, train_mode=True, max_boxes=1):
     '''random preprocessing for real-time data augmentation'''
     SEG_DIR=config['seg_gt_path']
     line = annotation_line.split()
@@ -165,6 +166,40 @@ def get_random_data(annotation_line, input_shape,embed,config, train_mode=True, 
         word_vec=[qlist_to_vec(config['word_len'], sent,embed) for sent in sentences]
         return image_data, box_data,word_vec,ori_image,sentences,np.expand_dims(seg_map_ori ,-1)
     return image_data, box_data,word_vec,seg_map_data
+
+
+def get_one_data_for_testing(image_path, query_sentence, input_shape, embed, config, train_mode=True, max_boxes=1):
+    '''random preprocessing for real-time data augmentation'''
+    h, w = input_shape
+    sentence = query_sentence
+    sentences = [query_sentence]
+    # print(qlist)
+    if config['use_bert']:
+        vocabs = load_vocabulary(config['bert_path']+'/vocab.txt')
+        word_vec = get_bert_input(sentence, vocabs, 512)
+    else:
+        word_vec = qlist_to_vec(config['word_len'], sentence, embed)
+    # print(word_vec)
+    # print(np.shape(word_vec))
+    #######################################
+    image = Image.open(image_path)
+    iw, ih = image.size
+
+    scale = min(w / iw, h / ih)
+    nw = int(iw * scale)
+    nh = int(ih * scale)
+    dx = (w - nw) // 2
+    dy = (h - nh) // 2
+    ori_image = image
+
+    image = image.resize((nw, nh), Image.BICUBIC)
+    new_image = Image.new('RGB', (w, h), (128, 128, 128))
+    new_image.paste(image, (dx, dy))
+    image_data = np.array(new_image) / 255.
+
+    word_vec = [qlist_to_vec(config['word_len'], sent, embed)
+                for sent in sentences]
+    return image_data, word_vec, ori_image, sentences
 
 
 def lr_step_decay(lr_start=0.001, steps=[30, 40]):

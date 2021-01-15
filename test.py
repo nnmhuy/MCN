@@ -8,15 +8,14 @@ from utils.parse_config import  config
 from callbacks.eval import Evaluate
 from callbacks.common import RedirectModel
 import shutil
+import sys
 
 class Evaluator(object):
-    def __init__(self):
-        with open(config['evaluate_set']) as f:
-            val_lines = f.readlines()
-        self.val_set_num=len(val_lines)
-        print('val len', self.val_set_num)
-        # Validation set path
-        self.val_data=val_lines
+    def __init__(self, image_path, query_sentence):
+        print(image_path)
+        print(query_sentence)
+        self.image_path = image_path
+        self.query_sentence = query_sentence
         # Detecter setting
         self.anchors_path = config['anchors_file']
         self.anchors = self.get_anchors(self.anchors_path)
@@ -28,7 +27,7 @@ class Evaluator(object):
         self.yolo_model, self.yolo_body = self.create_model(yolo_weights_path=config['evaluate_model'],freeze_body=-1)
 
         #evaluator init
-        self.evaluator = RedirectModel(Evaluate(self.val_data,self.anchors,config, tensorboard=None),self.yolo_body)
+        self.evaluator = RedirectModel(Evaluate(self.image_path, self.query_sentence ,self.anchors,config, tensorboard=None),self.yolo_body)
         self.evaluator.on_train_begin()
 
     def create_model(self, load_pretrained=True, freeze_body=1,
@@ -64,24 +63,6 @@ class Evaluator(object):
     def eval(self):
         results=dict()
         self.evaluator.on_epoch_end(-1,results)
-        det_acc=results['det_acc']
-        seg_iou=results['seg_iou']
-        seg_prec=results['seg_prec']
-        ie_score=results['ie_score']
-        #dump the  result to .txt
-        if os.path.exists('result/'):
-            shutil.rmtree('result/')
-        os.mkdir('result/')
-        with open('result/result.txt', 'w') as f_w:
-            f_w.write('segmentation result:' + '\n')
-            f_w.write('iou: %.4f\n'%(seg_iou))
-            for item in seg_prec:
-                f_w.write('iou@%.2f: %.4f'%(item,seg_prec[item] )+'\n')
-            f_w.write('\n')
-            f_w.write('detection result:' + '\n')
-            f_w.write('Acc@.5: %.4f\n' % (det_acc))
-            f_w.write('\n')
-            f_w.write('IE score : %.4f' % (ie_score) + '% \n')
 
     @staticmethod
     def get_anchors(anchors_path):
@@ -93,5 +74,8 @@ class Evaluator(object):
 
 
 if __name__ == "__main__":
-    evaluator=Evaluator()
+    args = sys.argv[1:]
+    image_path = args[0]
+    query_sentence = args[1]
+    evaluator = Evaluator(sys.argv[1:], query_sentence)
     evaluator.eval()
