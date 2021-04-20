@@ -129,13 +129,13 @@ def runForAllVideos(meta_file_url, data_url, output_folder):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if args[0] = "-a":
+    if args[0] == "-a":
         meta_file_url = args[1]
         data_url = args[2]
         output_folder = args[3]
         runForAllVideos(meta_file_url, data_url, output_folder)
 
-    if args[0] = "-i":
+    if args[0] == "-i":
         image_path = args[1]
         query_sentence = args[2]
         evaluator = Evaluator(image_path, query_sentence, "")
