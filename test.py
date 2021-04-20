@@ -17,7 +17,7 @@ class Evaluator(object):
     def __init__(self, image_path, query_sentence, output_image_url):
         print(image_path)
         print(query_sentence)
-        print(output_image_name)
+        print(output_image_url)
         self.image_path = image_path
         self.query_sentence = query_sentence
         self.output_image_url = output_image_url
@@ -34,6 +34,14 @@ class Evaluator(object):
         #evaluator init
         self.evaluator = RedirectModel(Evaluate(self.image_path, self.query_sentence ,self.anchors,config, tensorboard=None),self.yolo_body)
         self.evaluator.on_train_begin()
+
+    def update_image(self, image_path, query_sentence, output_image_url):
+        print(image_path)
+        print(query_sentence)
+        print(output_image_url)
+        self.image_path = image_path
+        self.query_sentence = query_sentence
+        self.output_image_url = output_image_url
 
     def create_model(self, load_pretrained=True, freeze_body=1,
                      yolo_weights_path='/home/luogen/weights/coco/yolo_weights.h5'):
@@ -104,6 +112,8 @@ def runForAllVideos(meta_file_url, data_url, output_folder):
     data = json.load(f)
 
     videos = data["videos"]
+    evaluator = Evaluator("image_path", "ref_exp", "output_image_url")
+
 
     count = 0
     for (index, videoId) in enumerate(videos.keys()):
@@ -115,15 +125,14 @@ def runForAllVideos(meta_file_url, data_url, output_folder):
             continue
 
         for frame in range(5):
-            frameIndex = (len(frames) / 5) * frame - 1
-            image_path = os.path.join(data_url, "JPEGImages", videoId, frames[frameIndex])
-            for (ref_exp, exp_index) in enumerate(expressions):
-                exp = ref_exp["exp"]
-                output_image_name = "video_" + str(count) + "-frame_" + frames[frameIndex] + "-exp_" + str(exp_index)
+            frameIndex = int((len(frames) / 5) * frame)
+            image_path = os.path.join(data_url, videoId, frames[frameIndex] + '.jpg')
+            for exp_index in expressions:
+                ref_exp = expressions[exp_index]['exp']
+                output_image_name = "video_" + str(count) + "-frame_" + frames[frameIndex] + "-exp_" + exp_index
                 output_image_url = os.path.join(output_folder, output_image_name)
                 
-                print(output_image_url)
-                evaluator = Evaluator(image_path, query_sentence, output_image_url)
+                evaluator.update_image(image_path, ref_exp, output_image_url)
                 evaluator.eval_multiple()
 
 

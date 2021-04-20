@@ -1,3 +1,4 @@
+import os
 import keras
 from model.mcn_model import yolo_eval_v2
 import numpy as np
@@ -173,27 +174,25 @@ class Evaluate(keras.callbacks.Callback):
                 #             (20, 20),
                 #             cv2.FONT_HERSHEY_SIMPLEX,
                 #             .9, self.colors[2], 2)
+                referring_exp = str(sentences[i])
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 seg_image = cv2.cvtColor(seg_image, cv2.COLOR_GRAY2RGB)
-                print(seg_image.shape)
+                # print(seg_image.shape)
                 H, W, C = seg_image.shape
                 for i in range(H):
                     for j in range(W):
                         if (np.sum(seg_image[i, j,:]) == 0):
                             seg_image[i,j,1] = 255
-                image_with_seg = cv2.addWeighted(image, 0.9, seg_image, 0.1, 0)
+                image_with_seg = cv2.addWeighted(image, 0.7, seg_image, 0.3, 0)
 
                 result_image = np.concatenate((image, seg_image, image_with_seg), axis=1)
-                result_image = np.concatenate((result_image, np.zeros((60, W, C), dtype=np.uint8)), axis=0)
+                result_image = np.concatenate((result_image, np.zeros((100, W * 3, C), dtype=np.uint8)), axis=0)
                 cv2.putText(result_image,
-                    str(sentences[i]),
-                    (H + 20, 20),
+                    referring_exp,
+                    (20, H + 30),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     .9, self.colors[2], 2)
 
-                # TODO: show image (image) and segmentation (seg_image)
-                # cv2_imshow(image_with_seg)
-                print("Output")
                 return image, seg_image, image_with_seg, result_image
 
     def sigmoid_(self,x):
