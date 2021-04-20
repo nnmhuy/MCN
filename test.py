@@ -10,13 +10,16 @@ from callbacks.common import RedirectModel
 import shutil
 import sys
 from google.colab.patches import cv2_imshow
+import json
 
 class Evaluator(object):
-    def __init__(self, image_path, query_sentence):
+    def __init__(self, image_path, query_sentence, output_image_name):
         print(image_path)
         print(query_sentence)
+        print(output_image_name)
         self.image_path = image_path
         self.query_sentence = query_sentence
+        self.output_image_name = output_image_name
         # Detecter setting
         self.anchors_path = config['anchors_file']
         self.anchors = self.get_anchors(self.anchors_path)
@@ -67,7 +70,10 @@ class Evaluator(object):
         image = results['image']
         seg_image = results['seg_image']
         image_with_seg = results['image_with_seg']
-        cv2_imshow(image)
+        result_image = results['result_image']
+
+        cv2.imwrite('./images/' + self.output_image_name + ".jpg", result_image)
+
 
     @staticmethod
     def get_anchors(anchors_path):
@@ -78,9 +84,41 @@ class Evaluator(object):
         return np.array(anchors).reshape(-1, 2)
 
 
+
+def runForAllVideos(meta_file_url, data_url):
+    f = open(meta_file_url,)
+    folders = os.listdir(data_url)
+    data = json.load(f)
+
+    videos = data["videos"]
+
+    count = 0
+    for (index, videoId) in enumerate(videos.keys()):
+        expressions = videos[videoId]["expressions"]
+        frames = videos[videoId]["frames"]
+        has_video = videoId in folders
+        count += has_video
+        if not(has_video):
+            continue
+
+        for frame in range(5):
+            frameIndex = (len(frames) / 5) * frame - 1
+            image_path = os.path.join(data_url, "JPEGImages", videoId, frames[frameIndex])
+            for (ref_exp, exp_index) in enumerate(expressions):
+                exp = ref_exp["exp"]
+                output_image_name = "video_" + str(count) + "-frame_" + frames[frameIndex] + "-exp_" + str(exp_index)
+                
+                print(output_image_name)
+                evaluator = Evaluator(image_path, query_sentence, output_image_name)
+                evaluator.eval()
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
-    image_path = args[0]
-    query_sentence = args[1]
-    evaluator = Evaluator(image_path, query_sentence)
-    evaluator.eval()
+    # image_path = args[0]
+    # query_sentence = args[1]
+    # evaluator = Evaluator(image_path, query_sentence)
+    # evaluator.eval()
+    meta_file_url = args[0]
+    data_url = args[1]
+    runForAllVideos(meta_file_url, data_url)

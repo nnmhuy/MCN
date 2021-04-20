@@ -71,10 +71,11 @@ class Evaluate(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         if logs is None:
             logs = {}
-        image, seg_image, image_with_seg = self.evaluate(is_save_images=True)
+        image, seg_image, image_with_seg, result_image = self.evaluate(is_save_images=True)
         logs['image'] = image
         logs['seg_image'] = seg_image
         logs['image_with_seg'] = image_with_seg
+        logs['result_image'] = result_image
 
     def evaluate(self, tag='image', is_save_images=False):
         self.boxes, self.scores, self.eval_inputs = yolo_eval_v2(self.model.output_shape[0],self.anchors, self.input_image_shape,
@@ -167,11 +168,11 @@ class Evaluate(keras.callbacks.Callback):
                             (left, max(top - 3, 0)),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             font_size, color, 2)
-                cv2.putText(image,
-                            str(sentences[i]),
-                            (20, 20),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            .9, self.colors[2], 2)
+                # cv2.putText(image,
+                #             str(sentences[i]),
+                #             (20, 20),
+                #             cv2.FONT_HERSHEY_SIMPLEX,
+                #             .9, self.colors[2], 2)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 seg_image = cv2.cvtColor(seg_image, cv2.COLOR_GRAY2RGB)
                 print(seg_image.shape)
@@ -180,14 +181,23 @@ class Evaluate(keras.callbacks.Callback):
                     for j in range(W):
                         if (np.sum(seg_image[i, j,:]) == 0):
                             seg_image[i,j,1] = 255
-                image_with_seg = cv2.addWeighted(image, 0.4, seg_image, 0.1, 0)
+                image_with_seg = cv2.addWeighted(image, 0.9, seg_image, 0.1, 0)
                 cv2.imwrite('./images/'+'output'+'.jpg',image)
                 cv2.imwrite('./images/'+'segment'+'.jpg', seg_image)
                 cv2.imwrite('./images/'+'image_with_seg'+'.jpg', image_with_seg)
+
+                result_image = np.concatenate((image, seg_image, image_with_seg), axis=1)
+                result_image = np.concatenate((result_image, np.zeros((60, W, C), dtype=np.uint8)), axis=0)
+                cv2.putText(result_image,
+                    str(sentences[i]),
+                    (H + 20, 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    .9, self.colors[2], 2)
+
                 # TODO: show image (image) and segmentation (seg_image)
                 # cv2_imshow(image_with_seg)
                 print("Output")
-                return image, seg_image, image_with_seg
+                return image, seg_image, image_with_seg, result_image
 
     def sigmoid_(self,x):
         return 1. / (1. + np.exp(-x))
