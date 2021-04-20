@@ -11,15 +11,16 @@ import shutil
 import sys
 from google.colab.patches import cv2_imshow
 import json
+import cv2
 
 class Evaluator(object):
-    def __init__(self, image_path, query_sentence, output_image_name):
+    def __init__(self, image_path, query_sentence, output_image_url):
         print(image_path)
         print(query_sentence)
         print(output_image_name)
         self.image_path = image_path
         self.query_sentence = query_sentence
-        self.output_image_name = output_image_name
+        self.output_image_url = output_image_url
         # Detecter setting
         self.anchors_path = config['anchors_file']
         self.anchors = self.get_anchors(self.anchors_path)
@@ -64,7 +65,7 @@ class Evaluator(object):
         model = Model([model_body.input[0], model_body.input[1], *det_gt,seg_gt], model_loss)
         return model, model_body
 
-    def eval(self):
+    def eval_single(self):
         results=dict()
         self.evaluator.on_epoch_end(-1, results)
         image = results['image']
@@ -72,8 +73,20 @@ class Evaluator(object):
         image_with_seg = results['image_with_seg']
         result_image = results['result_image']
 
-        cv2.imwrite('./images/' + self.output_image_name + ".jpg", result_image)
+        cv2.imwrite('./images/'+'output'+'.jpg',image)
+        cv2.imwrite('./images/'+'segment'+'.jpg', seg_image)
+        cv2.imwrite('./images/'+'image_with_seg'+'.jpg', image_with_seg)
+        cv2.imwrite('./images/'+'result_image'+'.jpg', result_image)
 
+    def eval_multiple(self):
+        results=dict()
+        self.evaluator.on_epoch_end(-1, results)
+        image = results['image']
+        seg_image = results['seg_image']
+        image_with_seg = results['image_with_seg']
+        result_image = results['result_image']
+
+        cv2.imwrite(self.output_image_url + ".jpg", result_image)
 
     @staticmethod
     def get_anchors(anchors_path):
@@ -85,7 +98,7 @@ class Evaluator(object):
 
 
 
-def runForAllVideos(meta_file_url, data_url):
+def runForAllVideos(meta_file_url, data_url, output_folder):
     f = open(meta_file_url,)
     folders = os.listdir(data_url)
     data = json.load(f)
@@ -107,18 +120,23 @@ def runForAllVideos(meta_file_url, data_url):
             for (ref_exp, exp_index) in enumerate(expressions):
                 exp = ref_exp["exp"]
                 output_image_name = "video_" + str(count) + "-frame_" + frames[frameIndex] + "-exp_" + str(exp_index)
+                output_image_url = os.path.join(output_folder, output_image_name)
                 
-                print(output_image_name)
-                evaluator = Evaluator(image_path, query_sentence, output_image_name)
-                evaluator.eval()
+                print(output_image_url)
+                evaluator = Evaluator(image_path, query_sentence, output_image_url)
+                evaluator.eval_multiple()
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    # image_path = args[0]
-    # query_sentence = args[1]
-    # evaluator = Evaluator(image_path, query_sentence)
-    # evaluator.eval()
-    meta_file_url = args[0]
-    data_url = args[1]
-    runForAllVideos(meta_file_url, data_url)
+    if args[0] = "-a":
+        meta_file_url = args[1]
+        data_url = args[2]
+        output_folder = args[3]
+        runForAllVideos(meta_file_url, data_url, output_folder)
+
+    if args[0] = "-i":
+        image_path = args[1]
+        query_sentence = args[2]
+        evaluator = Evaluator(image_path, query_sentence, "")
+        evaluator.eval_single()

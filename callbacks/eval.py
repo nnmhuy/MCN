@@ -182,9 +182,6 @@ class Evaluate(keras.callbacks.Callback):
                         if (np.sum(seg_image[i, j,:]) == 0):
                             seg_image[i,j,1] = 255
                 image_with_seg = cv2.addWeighted(image, 0.9, seg_image, 0.1, 0)
-                cv2.imwrite('./images/'+'output'+'.jpg',image)
-                cv2.imwrite('./images/'+'segment'+'.jpg', seg_image)
-                cv2.imwrite('./images/'+'image_with_seg'+'.jpg', image_with_seg)
 
                 result_image = np.concatenate((image, seg_image, image_with_seg), axis=1)
                 result_image = np.concatenate((result_image, np.zeros((60, W, C), dtype=np.uint8)), axis=0)
