@@ -43,6 +43,10 @@ class Evaluator(object):
         self.query_sentence = query_sentence
         self.output_image_url = output_image_url
 
+        #evaluator init
+        self.evaluator = RedirectModel(Evaluate(self.image_path, self.query_sentence ,self.anchors,config, tensorboard=None),self.yolo_body)
+        self.evaluator.on_train_begin()
+
     def create_model(self, load_pretrained=True, freeze_body=1,
                      yolo_weights_path='/home/luogen/weights/coco/yolo_weights.h5'):
         K.clear_session()  # get a new session
